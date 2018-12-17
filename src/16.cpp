@@ -298,6 +298,14 @@ int count_ambiguous(const std::vector<Sample>& samples)
     });
 }
 
+template <template <typename U, typename alloc = std::allocator<U>> class C, typename T1, typename T2>
+C<T2> map(const C<T1>& in, std::function<T2(T1)> f)
+{
+    C<T2> out(in.size());
+    std::transform(std::begin(in), std::end(in), std::begin(out), f);
+    return out;
+}
+
 int main()
 {
     auto [samples, raw] = read(std::cin);
@@ -307,11 +315,8 @@ int main()
 
     // part 2
     auto code2op = find_mapping(samples);
-
-    std::vector<Inst> instructions(raw.size());
-    std::transform(std::begin(raw), std::end(raw), std::begin(instructions), [&code2op](RawInst ri) {
-        return Inst{code2op[ri.OP], ri.A, ri.B, ri.C};
-    });
+    auto raw2inst = std::function<Inst(RawInst)>([&code2op](RawInst ri){ return Inst{code2op[ri.OP], ri.A, ri.B, ri.C}; });
+    std::vector<Inst> instructions = map(raw, raw2inst);
 
     auto [r0, r1, r2, r3] = execute_m({0, 0, 0, 0}, instructions);
     std::cout << "[" << r0 << ", " << r1 << ", " << r2 << ", " << r3 << "]" << std::endl;
